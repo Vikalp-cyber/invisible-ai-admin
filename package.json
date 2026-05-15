@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "docker:up": "docker compose up --build",
+    "docker:dev": "docker compose -f docker-compose.dev.yml up"
   },
   "dependencies": {
     "react": "^19.2.5",
