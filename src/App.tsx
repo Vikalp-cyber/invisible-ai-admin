@@ -11,6 +11,7 @@ import { GroqKeysPage } from './pages/GroqKeysPage'
 import { LoginPage } from './pages/LoginPage'
 import { PaymentRequestDetailPage } from './pages/PaymentRequestDetailPage'
 import { PaymentRequestsPage } from './pages/PaymentRequestsPage'
+import { PricingPage } from './pages/PricingPage'
 import { UserDetailPage } from './pages/UserDetailPage'
 import { UsersPage } from './pages/UsersPage'
 
@@ -27,6 +28,7 @@ export default function App() {
               <Route path="/users/:userId" element={<UserDetailPage />} />
               <Route path="/payment-requests" element={<PaymentRequestsPage />} />
               <Route path="/payment-requests/:requestId" element={<PaymentRequestDetailPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
               <Route path="/groq-keys" element={<GroqKeysPage />} />
               <Route path="/groq-keys/:keyId" element={<GroqKeyDetailPage />} />
               <Route path="/deepgram-keys" element={<DeepgramKeysPage />} />

@@ -17,7 +17,10 @@ import type {
   GroqKeyDetail,
   GroqKeyListItem,
   GroqKeyPatchBody,
+  AdminPricingListResponse,
   PaymentRequestStatus,
+  PlanPricing,
+  PlanPricingPatchBody,
   UsersListResponse,
   WindowsAppReleaseDeleteResponse,
   WindowsAppReleaseMeta,
@@ -61,6 +64,13 @@ function parseErrorMessage(status: number, body: unknown): string {
   if (status === 409) return 'Conflict — this version or resource already exists.'
   return `Request failed (${status}).`
 }
+
+/** Encode path segments (user id, payment request id, key id, semver version). */
+function encPath(segment: string): string {
+  return encodeURIComponent(segment)
+}
+
+// —— Auth: POST /admin/login (public), GET /admin/me ——
 
 export function credentialToAuth(
   c:
@@ -187,7 +197,7 @@ export function listUsers(
 }
 
 export function getUser(apiBase: string, auth: AdminAuth, userId: string) {
-  return adminFetch<AdminUserDetail>(apiBase, auth, `/admin/users/${userId}`)
+  return adminFetch<AdminUserDetail>(apiBase, auth, `/admin/users/${encPath(userId)}`)
 }
 
 export function recordPayment(
@@ -201,7 +211,7 @@ export function recordPayment(
     reactivate?: boolean
   },
 ) {
-  return adminFetch<AdminUser>(apiBase, auth, `/admin/users/${userId}/payment`, {
+  return adminFetch<AdminUser>(apiBase, auth, `/admin/users/${encPath(userId)}/payment`, {
     method: 'POST',
     body: JSON.stringify(body),
   })
@@ -213,7 +223,7 @@ export function patchUserStatus(
   userId: string,
   isActive: boolean,
 ) {
-  return adminFetch<AdminUser>(apiBase, auth, `/admin/users/${userId}/status`, {
+  return adminFetch<AdminUser>(apiBase, auth, `/admin/users/${encPath(userId)}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ isActive }),
   })
@@ -225,14 +235,14 @@ export function patchTokenLimit(
   userId: string,
   tokenLimit: number,
 ) {
-  return adminFetch<AdminUser>(apiBase, auth, `/admin/users/${userId}/limit`, {
+  return adminFetch<AdminUser>(apiBase, auth, `/admin/users/${encPath(userId)}/limit`, {
     method: 'PATCH',
     body: JSON.stringify({ tokenLimit }),
   })
 }
 
 export function resetUsage(apiBase: string, auth: AdminAuth, userId: string) {
-  return adminFetch<AdminUser>(apiBase, auth, `/admin/users/${userId}/reset-usage`, {
+  return adminFetch<AdminUser>(apiBase, auth, `/admin/users/${encPath(userId)}/reset-usage`, {
     method: 'POST',
   })
 }
@@ -255,7 +265,7 @@ export function listGroqKeys(
 }
 
 export function getGroqKey(apiBase: string, auth: AdminAuth, id: string) {
-  return adminFetch<GroqKeyDetail>(apiBase, auth, `/admin/groq-keys/${id}`)
+  return adminFetch<GroqKeyDetail>(apiBase, auth, `/admin/groq-keys/${encPath(id)}`)
 }
 
 export function createGroqKey(
@@ -275,14 +285,14 @@ export function patchGroqKey(
   id: string,
   body: GroqKeyPatchBody,
 ) {
-  return adminFetch<GroqKeyDetail>(apiBase, auth, `/admin/groq-keys/${id}`, {
+  return adminFetch<GroqKeyDetail>(apiBase, auth, `/admin/groq-keys/${encPath(id)}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
   })
 }
 
 export function deleteGroqKey(apiBase: string, auth: AdminAuth, id: string) {
-  return adminFetch<GroqKeyDeleteResponse>(apiBase, auth, `/admin/groq-keys/${id}`, {
+  return adminFetch<GroqKeyDeleteResponse>(apiBase, auth, `/admin/groq-keys/${encPath(id)}`, {
     method: 'DELETE',
   })
 }
@@ -305,7 +315,7 @@ export function listDeepgramKeys(
 }
 
 export function getDeepgramKey(apiBase: string, auth: AdminAuth, id: string) {
-  return adminFetch<DeepgramKeyDetail>(apiBase, auth, `/admin/deepgram-keys/${id}`)
+  return adminFetch<DeepgramKeyDetail>(apiBase, auth, `/admin/deepgram-keys/${encPath(id)}`)
 }
 
 export function createDeepgramKey(
@@ -325,14 +335,14 @@ export function patchDeepgramKey(
   id: string,
   body: DeepgramKeyPatchBody,
 ) {
-  return adminFetch<DeepgramKeyDetail>(apiBase, auth, `/admin/deepgram-keys/${id}`, {
+  return adminFetch<DeepgramKeyDetail>(apiBase, auth, `/admin/deepgram-keys/${encPath(id)}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
   })
 }
 
 export function deleteDeepgramKey(apiBase: string, auth: AdminAuth, id: string) {
-  return adminFetch<DeepgramKeyDeleteResponse>(apiBase, auth, `/admin/deepgram-keys/${id}`, {
+  return adminFetch<DeepgramKeyDeleteResponse>(apiBase, auth, `/admin/deepgram-keys/${encPath(id)}`, {
     method: 'DELETE',
   })
 }
@@ -361,7 +371,7 @@ export function listPaymentRequests(
 }
 
 export function getPaymentRequest(apiBase: string, auth: AdminAuth, id: string) {
-  return adminFetch<AdminPaymentRequest>(apiBase, auth, `/admin/payment-requests/${id}`)
+  return adminFetch<AdminPaymentRequest>(apiBase, auth, `/admin/payment-requests/${encPath(id)}`)
 }
 
 export function approvePaymentRequest(
@@ -370,10 +380,15 @@ export function approvePaymentRequest(
   id: string,
   body: { tokensToAdd: number; adminNote?: string; reactivate?: boolean },
 ) {
-  return adminFetch<AdminPaymentRequest>(apiBase, auth, `/admin/payment-requests/${id}/approve`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
+  return adminFetch<AdminPaymentRequest>(
+    apiBase,
+    auth,
+    `/admin/payment-requests/${encPath(id)}/approve`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  )
 }
 
 export function rejectPaymentRequest(
@@ -382,13 +397,34 @@ export function rejectPaymentRequest(
   id: string,
   body: { adminNote?: string },
 ) {
-  return adminFetch<AdminPaymentRequest>(apiBase, auth, `/admin/payment-requests/${id}/reject`, {
-    method: 'POST',
+  return adminFetch<AdminPaymentRequest>(
+    apiBase,
+    auth,
+    `/admin/payment-requests/${encPath(id)}/reject`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  )
+}
+
+export function listAdminPricing(apiBase: string, auth: AdminAuth) {
+  return adminFetch<AdminPricingListResponse>(apiBase, auth, '/admin/pricing')
+}
+
+export function patchPlanPricing(
+  apiBase: string,
+  auth: AdminAuth,
+  planType: string,
+  body: PlanPricingPatchBody,
+) {
+  return adminFetch<PlanPricing>(apiBase, auth, `/admin/pricing/${encPath(planType)}`, {
+    method: 'PATCH',
     body: JSON.stringify(body),
   })
 }
 
-const encVersion = (version: string) => encodeURIComponent(version)
+const encVersion = encPath
 
 export function listAppReleases(apiBase: string, auth: AdminAuth) {
   return adminFetch<WindowsAppReleaseMeta[]>(apiBase, auth, '/admin/app-releases')

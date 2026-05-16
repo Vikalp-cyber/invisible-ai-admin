@@ -77,23 +77,13 @@ export function UserDetailPage() {
     setBusy(true)
     setError(null)
     try {
-      const updated = await recordPayment(apiBase, adminAuth, userId, {
+      await recordPayment(apiBase, adminAuth, userId, {
         amountPaise,
         tokensToAdd: tokens,
         note: note.trim() || undefined,
         reactivate,
       })
-      setUser((prev) =>
-        prev
-          ? {
-              ...prev,
-              ...updated,
-              payments: prev.payments,
-            }
-          : null,
-      )
-      const full = await getUser(apiBase, adminAuth, userId)
-      setUser(full)
+      await refreshUser()
       setPayOpen(false)
       setNote('')
     } catch (err) {
@@ -115,10 +105,8 @@ export function UserDetailPage() {
     setBusy(true)
     setError(null)
     try {
-      const updated = await patchTokenLimit(apiBase, adminAuth, userId, lim)
-      setUser((prev) => (prev ? { ...prev, ...updated, payments: prev.payments } : null))
-      const full = await getUser(apiBase, adminAuth, userId)
-      setUser(full)
+      await patchTokenLimit(apiBase, adminAuth, userId, lim)
+      await refreshUser()
       setLimitOpen(false)
     } catch (err) {
       if (err instanceof ApiError) setError(err.message)
@@ -128,13 +116,20 @@ export function UserDetailPage() {
     }
   }
 
+  async function refreshUser() {
+    if (!userId) return
+    const full = await getUser(apiBase, adminAuth, userId)
+    setUser(full)
+    setTokenLimitInput(String(full.tokenLimit))
+  }
+
   async function onToggleActive(next: boolean) {
     if (!userId) return
     setBusy(true)
     setError(null)
     try {
-      const updated = await patchUserStatus(apiBase, adminAuth, userId, next)
-      setUser((prev) => (prev ? { ...prev, ...updated, payments: prev.payments } : null))
+      await patchUserStatus(apiBase, adminAuth, userId, next)
+      await refreshUser()
     } catch (err) {
       if (err instanceof ApiError) setError(err.message)
       else setError('Could not update status.')
@@ -155,10 +150,8 @@ export function UserDetailPage() {
     setBusy(true)
     setError(null)
     try {
-      const updated = await resetUsage(apiBase, adminAuth, userId)
-      setUser((prev) => (prev ? { ...prev, ...updated, payments: prev.payments } : null))
-      const full = await getUser(apiBase, adminAuth, userId)
-      setUser(full)
+      await resetUsage(apiBase, adminAuth, userId)
+      await refreshUser()
     } catch (err) {
       if (err instanceof ApiError) setError(err.message)
       else setError('Could not reset usage.')
@@ -246,6 +239,23 @@ export function UserDetailPage() {
           {error}
         </div>
       ) : null}
+
+      <div className="mt-6 rounded-2xl border border-zinc-700/80 bg-zinc-900/50 p-4 text-sm text-zinc-300">
+        <p>
+          <span className="font-medium text-zinc-200">Manual payment</span> (
+          <span className="font-mono text-xs">POST /admin/users/:id/payment</span>) — for bank/UPI
+          you recorded yourself.{' '}
+          <span className="font-medium text-zinc-200">UTR requests</span> (
+          <span className="font-mono text-xs">/admin/payment-requests</span>) — user-submitted
+          offline payments; approve or reject on the payment-requests queue.
+        </p>
+        <Link
+          to={`/payment-requests?search=${encodeURIComponent(user.email)}&status=PENDING`}
+          className="mt-2 inline-block text-sm font-medium text-violet-400 hover:text-violet-300"
+        >
+          View pending UTR requests for this user →
+        </Link>
+      </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-4">
@@ -387,8 +397,8 @@ export function UserDetailPage() {
         <form id="payment-form" onSubmit={onRecordPayment} className="space-y-4">
           <p className="text-xs text-zinc-500">
             Creates a payment row, increases <span className="text-zinc-400">totalPaidPaise</span>,
-            raises <span className="text-zinc-400">tokenLimit</span> using the server rule, and
-            optionally re-activates the user.
+            sets <span className="text-zinc-400">tokenLimit</span> to max(current limit, used) +
+            tokens to add, and optionally re-activates the user.
           </p>
           <label className="block text-sm font-medium text-zinc-300">
             Amount (₹)

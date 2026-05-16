@@ -207,3 +207,29 @@ export type WindowsAppReleaseDeleteResponse = {
   version: string
   deleted: true
 }
+
+/** Plan catalog — `GET /admin/pricing`, `PATCH /admin/pricing/:planType` */
+export type PlanPricing = {
+  planType: string
+  displayName: string
+  description: string | null
+  amountPaise: number
+  amountRupees: number
+  currency: string
+  tokensGranted: number
+  isActive: boolean
+  updatedAt: string
+}
+
+export type AdminPricingListResponse = {
+  plans: PlanPricing[]
+}
+
+export type PlanPricingPatchBody = {
+  amountPaise?: number
+  currency?: string
+  displayName?: string
+  description?: string
+  tokensGranted?: number
+  isActive?: boolean
+}

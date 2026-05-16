@@ -30,6 +30,10 @@ export function Layout() {
             <span className="inline-flex h-2 w-2 rounded-full bg-amber-400/80" aria-hidden />
             Payment requests
           </NavLink>
+          <NavLink to="/pricing" className={navClass}>
+            <span className="inline-flex h-2 w-2 rounded-full bg-rose-400/80" aria-hidden />
+            Pricing
+          </NavLink>
           <NavLink to="/groq-keys" className={navClass}>
             <span className="inline-flex h-2 w-2 rounded-full bg-sky-400/80" aria-hidden />
             Groq keys
@@ -78,6 +82,12 @@ export function Layout() {
                 className="rounded-lg px-2 py-1 text-sm font-medium text-violet-300 hover:bg-zinc-800/80 hover:text-violet-200"
               >
                 UTR
+              </NavLink>
+              <NavLink
+                to="/pricing"
+                className="rounded-lg px-2 py-1 text-sm font-medium text-violet-300 hover:bg-zinc-800/80 hover:text-violet-200"
+              >
+                Price
               </NavLink>
               <NavLink
                 to="/groq-keys"

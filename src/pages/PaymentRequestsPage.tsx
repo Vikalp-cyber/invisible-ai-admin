@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, listPaymentRequests } from '../lib/api'
 import { formatDate, formatInr, formatInt } from '../lib/format'
 import { useAuth } from '../context/AuthContext'
@@ -26,9 +26,23 @@ function statusBadge(status: PaymentRequestStatus) {
 
 export function PaymentRequestsPage() {
   const { apiBase, adminAuth } = useAuth()
-  const [statusFilter, setStatusFilter] = useState<'' | PaymentRequestStatus>('PENDING')
-  const [searchInput, setSearchInput] = useState('')
-  const [search, setSearch] = useState('')
+  const [searchParams] = useSearchParams()
+  const initialSearch = searchParams.get('search')?.trim() ?? ''
+
+  const statusFromUrl = searchParams.get('status')
+  const validStatuses: PaymentRequestStatus[] = ['PENDING', 'APPROVED', 'REJECTED']
+  const initialStatus: '' | PaymentRequestStatus =
+    statusFromUrl === null
+      ? 'PENDING'
+      : statusFromUrl === ''
+        ? ''
+        : validStatuses.includes(statusFromUrl as PaymentRequestStatus)
+          ? (statusFromUrl as PaymentRequestStatus)
+          : 'PENDING'
+
+  const [statusFilter, setStatusFilter] = useState<'' | PaymentRequestStatus>(initialStatus)
+  const [searchInput, setSearchInput] = useState(initialSearch)
+  const [search, setSearch] = useState(initialSearch)
   const [skip, setSkip] = useState(0)
   const [total, setTotal] = useState(0)
   const [items, setItems] = useState<AdminPaymentRequest[]>([])

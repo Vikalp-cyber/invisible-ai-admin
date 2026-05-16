@@ -119,10 +119,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : { kind: 'apiKey', apiKey: apiKeyValue! },
     )
     let cancelled = false
-    void adminMe(state.apiBase, auth).catch((e: unknown) => {
-      if (cancelled) return
-      if (e instanceof ApiError && e.status === 401) logout()
-    })
+    void adminMe(state.apiBase, auth)
+      .then((me) => {
+        if (cancelled) return
+        if (me.kind === 'jwt' && state.credential.kind === 'jwt') {
+          setState((prev) => {
+            if (!prev || prev.credential.kind !== 'jwt') return prev
+            const next: AuthState = {
+              apiBase: prev.apiBase,
+              credential: { ...prev.credential, admin: me.admin },
+            }
+            persist(next)
+            return next
+          })
+        }
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return
+        if (e instanceof ApiError && e.status === 401) logout()
+      })
     return () => {
       cancelled = true
     }
